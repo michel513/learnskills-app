@@ -1,0 +1,252 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+model Teacher {
+  id String @id @default(uuid())
+  userId String 
+  
+  username String?
+  firstName String?
+  lastName String?
+  email String? @unique
+  phoneNumber String?
+  bio String?
+  country String?
+  streetAddress String?
+  city String?
+  region String?
+  postalCode String?
+  
+  profilePictureUrl String?
+
+  diplomas Diploma[]
+  courses Course[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Diploma {
+  id String @id @default(uuid())
+  name String
+  year Int
+  institution String?
+  url String @db.Text
+  
+  teacherId String
+  teacher Teacher @relation(fields: [teacherId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teacherId])
+}
+
+
+
+model Course {
+  id String @id @default(uuid())
+  userId String
+  title String @db.Text
+  description String? @db.Text
+  videoUrl String? @db.Text
+  imageUrl String? @db.Text
+  price Float?
+  isPublished Boolean @default(false)
+
+  muxDataPreview muxPreview?
+  categoryId String?
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  chapters Chapter[]
+  attachments Attachment[]
+  purchases Purchase[]
+
+  teacherId String? 
+  teacher Teacher? @relation(fields: [teacherId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@fulltext([title])
+  @@index([teacherId])
+}
+
+model Category {
+
+  id String @id @default(uuid())
+  name String @unique
+  course Course[]
+}
+
+model Attachment {
+
+  id String @id @default(uuid())
+  name String 
+  url String @db.Text
+
+  courseId String
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+model Chapter {
+  id String @id @default(uuid())
+  title String
+  description String? @db.Text
+  videoUrl String? @db.Text
+  position Int
+  isPublished Boolean @default(false)
+  isFree Boolean @default(false)
+
+  muxData MuxData?
+  quiz Quiz[] 
+
+  courseId  String
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  userProgress UserProgress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([courseId])
+}
+
+// création des la base de données de quiz :
+
+model Quiz {
+  id String @id @default(uuid())
+  title String
+  description String? @db.Text
+
+  position Int
+  isPublished Boolean @default(false)
+
+  chapterId  String
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  
+  questions Question[]
+
+  @@index([chapterId])
+}
+
+model Question {
+  id String @id @default(uuid())
+  text String
+  position Int
+
+
+  quizId String
+  quiz Quiz @relation(fields: [quizId], references: [id])
+
+  QuestionProgresses QuestionProgress[]
+  answers Answer[]
+  
+
+  @@index([quizId])
+}
+
+model Answer {
+  id String @id @default(uuid())
+  text String 
+  isCorrect Boolean @default(false)
+  
+  position Int
+  questionId String
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@index([questionId])
+}
+
+model muxPreview {
+  id String @id @default(uuid())
+  assetId String 
+  playbackId String?
+
+  courseId String @unique
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model MuxData {
+  id String @id @default(uuid())
+  assetId String 
+  playbackId String?
+
+  chapterId String @unique
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  
+}
+
+model QuestionProgress {
+  id String @id @default(uuid())
+  userId String
+
+  questionId String
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  isCompleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([questionId])
+  @@unique([userId, questionId])
+}
+
+
+model UserProgress {
+  id String @id @default(uuid())
+  userId String
+
+  chapterId String
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  isCompleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([chapterId])
+  @@unique([userId, chapterId])
+}
+
+model Purchase {
+  id String @id @default(uuid())
+  userId String 
+
+  courseId String
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model StripeCUstomer {
+  id String @id @default(uuid())
+  userId String @unique
+  stripCustomerId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
